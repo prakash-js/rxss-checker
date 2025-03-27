@@ -64,8 +64,7 @@ def reflection_validator(target_url):
 
                 #Skipping because  reflection is in a "href/src/action" context
                 if re.search(r'(href|src|action)="([^"]*)' + re.escape(payloads) , output):
-                    print("Reflection on URL , XSS won't EXECUTE")
-                    continue
+                    break
 
                 if "<R'-\"Checker|<tag>>" in output:
                     print(f"{url}  \n  {Fore.YELLOW} Potential vulnerable Endpoint Found Reflects[<,',|,-,\" >]")
