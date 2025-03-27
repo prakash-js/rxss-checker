@@ -1,8 +1,9 @@
-#IN DEVELOPMENT 
-
 import argparse
 import requests
 import re
+from colorama import init,Fore
+
+init(autoreset=True)
 
 args = argparse.ArgumentParser()
 
@@ -32,36 +33,36 @@ def single_url():
 
 print("If Vulnerable URL found it will Display")
 
+
 def reflection_validator(target_url):
     for payloads in payload:
         try:
-            url = target_url + payloads.strip()
+            urls = target_url
+            url = urls.replace("PAYLOAD", payloads)
             response = requests.get(url)
             if response.status_code == 200:
                 output = response.text
 
-                if re.search(r'(href|src|action)="([^"]*)' + re.escape(payloads) + r'[^"]*"', output):
-                    print(f"Payload reflected inside a URL (not vulnerable)")
+                if re.search(r'(href|src|action)="([^"]*)' + re.escape(payloads) + r'[^"]*"', output, re.IGNORECASE):
+                    continue
 
                 if "<R-Checker<tag>>" in output:
-                    print(f"{url} \n Vulnerable Endpoint Found Reflects[<, >]")
+                    print(f"{url}  \n  {Fore.YELLOW} Vulnerable Endpoint Found Reflects[<, >]")
                     write_output(url)
                     break
 
-
                 if r"\<R-Checker\<tag\>\>" in output:
-                    print(f"{url} \n Vulnerable Endpoint Found Reflects[\<, >/]")
+                    print(f"{url}" + "\n" + Fore.YELLOW + r"Vulnerable Endpoint Found Reflects[\<, >/]")
                     write_output(url)
                     break
 
             if response.status_code == 500:
-                print(f"{url} => 500 Internal Error")
+                print(Fore.Red + f"{url} => {Fore.RED} 500 Internal Error")
                 write_output(url)
 
 
         except requests.exceptions.RequestException as e:
             pass
-
 
 def XSS_check(url):
     if "?" not in url:
@@ -73,7 +74,7 @@ def XSS_check(url):
         modified_second = []
         for new_values in new_value:
             key2,value2 = new_values.split("=")
-            modified_second.append(f"{key2}={payload[0]}")
+            modified_second.append(f"{key2}=PAYLOAD")
         joining = "&".join(modified_second)
         final_url = (key + "?" + joining)
         reflection_validator(final_url)
@@ -84,7 +85,7 @@ def XSS_check(url):
         key3 , value3 = split_url
         again = value3.split("=")
         key4, value4 = again
-        primary_mod.append(f"{key4}=")
+        primary_mod.append(f"{key4}=PAYLOAD")
         final2_url = (key + "?" +"=".join(primary_mod))
         reflection_validator(final2_url)
 
