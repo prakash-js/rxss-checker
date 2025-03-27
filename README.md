@@ -1,3 +1,3 @@
-# xss-checker
+# rxss-checker
 
-xss-checker is in development
+rxss-checker is in development
