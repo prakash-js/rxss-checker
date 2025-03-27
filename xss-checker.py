@@ -1,4 +1,5 @@
-#IN DEVELOPMENT
+#IN DEVELOPMENT 
+
 import argparse
 import requests
 import re
@@ -7,21 +8,59 @@ args = argparse.ArgumentParser()
 
 args.add_argument("--url", type=str, help="Specify a single URL.")
 args.add_argument("--urlist", type=str, help="Use this when you have a URL wordlist.")
+args.add_argument("--output", type=str, help="to save the output.")
+
 args = args.parse_args()
 
-payload = "<<Checker>tag>"
-element = r'<<Checker>tag>'
-
+payload = ["<R-Checker<tag>>", "%3CR-Checker%3Ctag%3E%3E", r"\<R-Checker\<tag\>\>",'&#60;R-Checker&#60;tag&#62;&#62;']
 
 def url_list():
     with open(args.urlist , 'r') as wordlist:
         for urls in wordlist:
             XSS_check(urls)
 
+def write_output(pass_url):
+    if args.output:
+        with open(args.output, 'a') as savelist:
+            savelist.write(pass_url)
+    else:
+        pass
+
+
 def single_url():
     XSS_check(args.url)
 
 print("If Vulnerable URL found it will Display")
+
+def reflection_validator(target_url):
+    for payloads in payload:
+        try:
+            url = target_url + payloads.strip()
+            response = requests.get(url)
+            if response.status_code == 200:
+                output = response.text
+
+                if re.search(r'(href|src|action)="([^"]*)' + re.escape(payloads) + r'[^"]*"', output):
+                    print(f"Payload reflected inside a URL (not vulnerable)")
+
+                if "<R-Checker<tag>>" in output:
+                    print(f"{url} \n Vulnerable Endpoint Found Reflects[<, >]")
+                    write_output(url)
+                    break
+
+
+                if r"\<R-Checker\<tag\>\>" in output:
+                    print(f"{url} \n Vulnerable Endpoint Found Reflects[\<, >/]")
+                    write_output(url)
+                    break
+
+            if response.status_code == 500:
+                print(f"{url} => 500 Internal Error")
+                write_output(url)
+
+
+        except requests.exceptions.RequestException as e:
+            pass
 
 
 def XSS_check(url):
@@ -34,39 +73,20 @@ def XSS_check(url):
         modified_second = []
         for new_values in new_value:
             key2,value2 = new_values.split("=")
-            modified_second.append(f"{key2}={payload}")
+            modified_second.append(f"{key2}={payload[0]}")
         joining = "&".join(modified_second)
         final_url = (key + "?" + joining)
-        try:
-            response = requests.get(final_url)
-            if response.status_code == 200:
-                output = response.text
-                match = re.search(element, output)
-                if match:
-                    print(f"{final_url} \nThe URL is potentially vulnerable to XSS as it reflects <>.")
-                else:
-                    return 0
-        except requests.exceptions.RequestException as e:
-            pass
+        reflection_validator(final_url)
+
 
     else:
         primary_mod = []
         key3 , value3 = split_url
         again = value3.split("=")
         key4, value4 = again
-        primary_mod.append(f"{key4}={payload}")
+        primary_mod.append(f"{key4}=")
         final2_url = (key + "?" +"=".join(primary_mod))
-        try:
-            response2 = requests.get(final2_url)
-            if response2.status_code == 200:
-                output2 = response2.text
-                match = re.search(element, output2)
-                if match:
-                    print(f"{final2_url} \nThe URL is potentially vulnerable to XSS as it reflects <>.")
-                else:
-                    return 0
-        except requests.exceptions.RequestException as e:
-            pass
+        reflection_validator(final2_url)
 
 
 if __name__ == "__main__":
@@ -75,4 +95,3 @@ if __name__ == "__main__":
 
     if args.urlist:
         url_list()
-
