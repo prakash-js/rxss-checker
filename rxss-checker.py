@@ -43,7 +43,7 @@ def reflection_validator(target_url):
             if response.status_code == 200:
                 output = response.text
 
-                if re.search(r'(href|src|action)="([^"]*)' + re.escape(payloads) + r'[^"]*"', output, re.IGNORECASE):
+                if re.search(r'(href|src|action)="([^"]*)' + re.escape(payloads) , output):
                     continue
 
                 if "<R-Checker<tag>>" in output:
